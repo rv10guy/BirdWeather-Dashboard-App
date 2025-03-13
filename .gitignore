@@ -8,6 +8,8 @@ env/
 venv/
 ENV/
 docs/
+!docs/diary.md
+!docs/mock-data.json
 build/
 develop-eggs/
 dist/
