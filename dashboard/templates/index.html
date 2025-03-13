@@ -6,113 +6,184 @@
     <title>BirdWeather Dashboard</title>
     <!-- Bootstrap 5 CSS from CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Font: Open Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">BirdWeather Dashboard</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Bird Sightings</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Weather Data</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Settings</a>
-                    </li>
-                </ul>
-            </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <div class="container mt-4">
+    <div class="container-fluid main-container">
         <div class="row">
-            <!-- Weather Section -->
-            <div class="col-md-6 mb-4">
+            <!-- Left column: Recent Detections -->
+            <div class="col-lg-8">
                 <div class="card">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">Current Weather</h5>
-                    </div>
                     <div class="card-body">
-                        <div id="weather-data">
-                            <h3>{{ weather.location if weather else 'Weather data unavailable' }}</h3>
-                            <div class="row">
-                                <div class="col">
-                                    <p class="h1">{{ weather.temperature }}°C</p>
-                                    <p>Feels like: {{ weather.feels_like }}°C</p>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0 fw-bold">Recent Detections ({{ detection_summary|length }})</h5>
+                            <div class="filter-row">
+                                <div class="filter-control me-3">
+                                    <span class="filter-label">Hide Common Bird</span>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="hideCommonBird">
+                                    </div>
                                 </div>
-                                <div class="col text-end">
-                                    <p>Humidity: {{ weather.humidity }}%</p>
-                                    <p>Wind: {{ weather.wind_speed }} km/h</p>
+                                <div class="dropdown me-3">
+                                    <button class="btn btn-light dropdown-toggle" type="button" id="timeFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Last 7 Days
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="timeFilterDropdown">
+                                        <li><a class="dropdown-item" href="#">Last 24 Hours</a></li>
+                                        <li><a class="dropdown-item" href="#">Last 7 Days</a></li>
+                                        <li><a class="dropdown-item" href="#">Last 30 Days</a></li>
+                                    </ul>
+                                </div>
+                                <div class="search-input">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" placeholder="Search">
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Bird Sightings Section -->
-            <div class="col-md-6 mb-4">
-                <div class="card">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">Recent Bird Sightings</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="bird-sightings">
-                            {% if birds %}
-                                <ul class="list-group">
-                                {% for bird in birds %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        {{ bird.species }}
-                                        <span class="badge bg-primary rounded-pill">{{ bird.count }}</span>
-                                    </li>
-                                {% endfor %}
-                                </ul>
-                            {% else %}
-                                <p>No recent bird sightings.</p>
-                            {% endif %}
+                        <div class="table-responsive">
+                            <table class="bird-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Total Detection</th>
+                                        <th>Last Detection</th>
+                                        <th>Overall Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for bird in detection_summary %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bird-img-cell me-3">
+                                                    <img src="{{ url_for('static', filename='img/' + birds[bird.bird_name].image) }}" 
+                                                         alt="{{ bird.bird_name }}" 
+                                                         class="bird-img"
+                                                         data-original-src="{{ url_for('static', filename='img/' + birds[bird.bird_name].image) }}"
+                                                         data-placeholder="{{ image_placeholder }}"
+                                                         onerror="this.onerror=null; this.src='{{ image_placeholder }}'; this.classList.add('placeholder-img');">
+                                                </div>
+                                                <span class="bird-name">{{ bird.bird_name }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="bird-count">{{ bird.count }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="detection-time">{{ bird.last_detection_time }}</span>
+                                        </td>
+                                        <td>
+                                            {% if birds[bird.bird_name].common %}
+                                                <span class="bird-count">6</span>
+                                            {% else %}
+                                                <span class="bird-count">8</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Data Visualization Section -->
-        <div class="row">
-            <div class="col-12 mb-4">
-                <div class="card">
-                    <div class="card-header bg-warning">
-                        <h5 class="mb-0">Bird Activity vs. Weather Conditions</h5>
+            <!-- Right column: Bird Details and Weather -->
+            <div class="col-lg-4">
+                <!-- Bird Details Card -->
+                <div class="card mb-4">
+                    <div class="card-body bird-details">
+                        {% if recent_detections and recent_detections|length > 0 %}
+                        {% set bird = recent_detections[0] %}
+                        <img src="{{ url_for('static', filename='img/' + birds[bird.bird_name].image) }}" 
+                             alt="{{ bird.bird_name }}" 
+                             class="bird-details-img"
+                             data-original-src="{{ url_for('static', filename='img/' + birds[bird.bird_name].image) }}"
+                             data-placeholder="{{ image_placeholder }}"
+                             onerror="this.onerror=null; this.src='{{ image_placeholder }}'; this.classList.add('placeholder-img');">
+                        <h3 class="bird-details-title">{{ bird.bird_name }}</h3>
+                        <p class="bird-details-scientific">{{ birds[bird.bird_name].scientific_name }}</p>
+                        <p class="bird-details-description">{{ birds[bird.bird_name].summary }}</p>
+                        {% else %}
+                        <p>No recent bird detections available.</p>
+                        {% endif %}
                     </div>
+                </div>
+
+                <!-- Weather Card -->
+                <div class="card mb-4 weather-card">
                     <div class="card-body">
-                        <div id="visualization" style="height: 300px;">
-                            <!-- Chart will be inserted here by JavaScript -->
-                            <p class="text-center">Data visualization loading...</p>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <span class="temperature">{{ weather.current.temperature }}°{{ weather.current.temperatureUnit }}</span>
+                                <p class="mb-0">{{ weather.current.condition }}</p>
+                            </div>
+                            <img src="{{ weather.current.icon }}" alt="Weather icon" class="weather-icon">
+                        </div>
+                        <div class="weather-detail">
+                            <i class="fas fa-wind weather-detail-icon"></i>
+                            <span>12km/h</span>
+                        </div>
+                        <div class="weather-detail">
+                            <i class="fas fa-tint weather-detail-icon"></i>
+                            <span>51%</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            <small class="text-muted">California, US State</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="far fa-clock me-2"></i>
+                            <small class="text-muted">{{ current_date_time }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Station Status Card -->
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-3">Station Summary</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <span class="status-online me-2">Online</span>
+                                <h6 class="mb-0">Station Name</h6>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <small class="text-muted">Last detection:</small>
+                            <small class="text-muted">{{ station.primary.last_detection }}</small>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-wifi me-2"></i>
+                                <span class="status-online">{{ station.primary.status }}</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-battery-three-quarters me-2"></i>
+                                <span class="fw-bold">45%</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Footer -->
-    <footer class="bg-dark text-white text-center py-3 mt-5">
-        <div class="container">
-            <p class="mb-0">BirdWeather Dashboard &copy; {{ current_year }}</p>
-        </div>
-    </footer>
 
     <!-- Bootstrap 5 JavaScript from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

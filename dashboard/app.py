@@ -4,6 +4,7 @@ Dashboard application main entry point.
 """
 import os
 import yaml
+import json
 import logging
 import datetime
 from pathlib import Path
@@ -43,46 +44,49 @@ def setup_logging(config):
     
     logging.basicConfig(**logging_config)
 
-# Mock data for development
-def get_mock_weather_data():
-    """Generate mock weather data for development."""
-    return {
-        'location': 'Sample Location',
-        'temperature': 22.5,
-        'feels_like': 23.1,
-        'humidity': 65,
-        'wind_speed': 12,
-        'condition': 'Partly Cloudy'
-    }
-
-def get_mock_bird_data():
-    """Generate mock bird sighting data for development."""
-    return [
-        {'species': 'American Robin', 'count': 5, 'time': '08:30 AM'},
-        {'species': 'Blue Jay', 'count': 2, 'time': '09:15 AM'},
-        {'species': 'Northern Cardinal', 'count': 3, 'time': '10:00 AM'},
-        {'species': 'Black-capped Chickadee', 'count': 7, 'time': '10:45 AM'},
-        {'species': 'Downy Woodpecker', 'count': 1, 'time': '11:30 AM'}
-    ]
+def load_mock_data():
+    """Load mock data from JSON file."""
+    try:
+        mock_data_path = Path(__file__).parent.parent / 'docs' / 'mock-data.json'
+        with open(mock_data_path, 'r') as file:
+            return json.load(file)
+    except Exception as e:
+        logging.error(f"Failed to load mock data: {e}")
+        return {}
 
 @app.route('/')
 def index():
     """Render the main dashboard page."""
-    # For a real app, you would fetch actual data here
-    weather_data = get_mock_weather_data()
-    bird_data = get_mock_bird_data()
+    # Load mock data from JSON file
+    mock_data = load_mock_data()
+    
+    # Get configuration
+    config = app.config.get('dashboard_config', {})
+    
+    # Get image placeholder configuration
+    image_placeholder = config.get('images', {}).get('default_placeholder', 
+                                                   'https://placehold.co/400x300/4A90E2/FFFFFF?text=Bird')
+    
+    current_date_time = datetime.datetime.now().strftime("%d %b %Y %I:%M %p")
     
     return render_template(
         'index.html',
-        weather=weather_data,
-        birds=bird_data,
-        current_year=datetime.datetime.now().year
+        recent_detections=mock_data.get('recent_detections', []),
+        detection_summary=mock_data.get('detection_summary', []),
+        birds=mock_data.get('birds', {}),
+        weather=mock_data.get('weather', {}),
+        station=mock_data.get('station', {}),
+        current_date_time=current_date_time,
+        image_placeholder=image_placeholder
     )
 
 def main():
     """Application entry point."""
     config = load_config()
     setup_logging(config)
+    
+    # Store the entire config in app.config for access in routes
+    app.config['dashboard_config'] = config
     
     # Configure Flask app from config
     app.config['DEBUG'] = config.get('server', {}).get('debug', True)
