@@ -1,0 +1,177 @@
+---
+description: Specific Guidelines for Python code
+globs: **/*.py
+alwaysApply: false
+---
+
+### **Overall Guidelines ###
+– Always prefer simple solutions  
+– Avoid duplication of code whenever possible, which means checking for other areas of the codebase that might already have similar code and functionality  
+– Write code that takes into account the different environments: dev, test, and prod  
+– You are careful to only make changes that are requested or you are confident are well understood and related to the change being requested  
+– When fixing an issue or bug, do not introduce a new pattern or technology without first exhausting all options for the existing implementation. And if you finally do this, make sure to remove the old implementation afterwards so we don’t have duplicate logic.  
+– Keep the codebase very clean and organized  
+– Avoid writing scripts in files if possible, especially if the script is likely only to be run once  
+– Avoid having files over 200–300 lines of code. Refactor at that point.  
+– Mocking data is only needed for tests, never mock data for dev or prod  
+– Never add stubbing or fake data patterns to code that affects the dev or prod environments  
+– Never overwrite my .env file without first asking and confirming
+
+---
+
+### **Key Principles**
+- Write clear, concise, and technical responses with accurate Python and Bootstrap code.
+- Use functional, declarative programming in Python; avoid classes except for Flask views.
+- Prefer iteration and modularization over code duplication.
+- Use descriptive variable and class names with auxiliary verbs (e.g., `is_active`, `has_permission` for Python; `.is-active`, `.has-permission` for Bootstrap).
+- Use lowercase with underscores for directories and files (e.g., `blueprints/user_routes.py`, `static/css/main.css`).
+- Favor named exports for Python routes and utility functions.
+- Use the Receive an Object, Return an Object (RORO) pattern in Python where applicable.
+- Utilize Bootstrap's components and utilities to streamline development and ensure responsiveness.
+- Prioritize maintainability, readability, and clean coding practices in both Python and HTML/CSS.
+- Use descriptive class names and structure in HTML/CSS to promote clarity and collaboration.
+
+---
+
+### **Python/Flask**
+- Use `def` for function definitions.
+- Use type hints for all function signatures where possible (e.g., `def get_user(id: int) -> dict`).
+- Organize the file structure: Flask app initialization, blueprints, models, utilities, config.
+- Avoid unnecessary nesting in conditionals; use early returns and guard clauses.
+- For single-line statements in conditionals, omit unnecessary blocks (e.g., `if condition: do_something()`).
+- **Note for Raspberry Pi 5**: Be mindful of resource constraints; avoid heavy libraries or processes that may overload the Pi's CPU or memory.
+
+---
+
+### **Error Handling and Validation**
+- **Python/Flask**:
+  - Handle errors and edge cases at the beginning of functions.
+  - Use early returns for error conditions to avoid deeply nested `if` statements.
+  - Place the happy path last in functions for improved readability.
+  - Use guard clauses to handle preconditions and invalid states early.
+  - Implement proper error logging and user-friendly error messages.
+  - Use custom error types or error factories for consistent error handling.
+- **Bootstrap**:
+  - Implement form validation using Bootstrap's built-in styles and classes for user feedback.
+  - Display error messages using Bootstrap's alert component.
+  - Structure forms with appropriate labels, placeholders, and error messages.
+
+---
+
+### **Dependencies**
+- **Python/Flask**:
+  - Flask
+  - Flask-RESTful (for RESTful API development)
+  - Flask-SQLAlchemy (for ORM)
+  - Flask-Migrate (for database migrations)
+  - Marshmallow (for serialization/deserialization)
+- **Bootstrap**:
+  - Bootstrap (latest version, CSS and JS)
+  - (Optional) jQuery or other JS frameworks for interactive components
+- **Note**: Avoid unnecessary dependencies to keep the app lightweight for Raspberry Pi 5 deployment.
+
+---
+
+### **Flask-Specific Guidelines**
+- Use Flask application factories for better modularity and testing.
+- Organize routes using Flask Blueprints (e.g., `user_bp = Blueprint("user", __name__)`).
+- Use Flask-RESTful for building RESTful APIs with class-based views.
+- Implement custom error handlers for different types of exceptions.
+- Use Flask's `before_request`, `after_request`, and `teardown_request` for request lifecycle management.
+- Utilize Flask extensions (e.g., Flask-SQLAlchemy, Flask-Migrate).
+- Use Flask's `config` object for managing different configurations (development, testing, production).
+- Implement proper logging using Flask's `app.logger`.
+- **For Raspberry Pi 5**: Optimize database queries and avoid memory-intensive operations; consider using SQLite for simplicity.
+
+—
+
+## **Database Interaction**
+- Use Flask-SQLAlchemy for ORM operations (e.g., `class User(db.Model):`).
+- Implement database migrations using Flask-Migrate (e.g., `flask db migrate`).
+- Ensure proper session management (e.g., `db.session.commit(); db.session.close()`).
+
+---
+
+### **Serialization and Validation**
+- Use Marshmallow for object serialization/deserialization and input validation (e.g., `class UserSchema(ma.Schema):`).
+
+---
+
+### **Testing**
+- Write unit tests using `pytest` (e.g., `def test_user_creation():`).
+- Use Flask's test client for integration testing (e.g., `client.get("/api/users")`).
+- Implement test fixtures for database and application setup (e.g., `@pytest.fixture def app():`).
+- Aim for at least 80% test coverage.
+- Use `unittest.mock` to mock external dependencies.
+
+---
+
+### **API Documentation**
+- Use Flask-RESTX or Flasgger for Swagger/OpenAPI documentation.
+- Document all endpoints with request/response schemas (e.g., `@api.doc(params={"id": "User ID"})`).
+
+---
+
+### **Performance Optimization**
+- **Flask**:
+  - Use Flask-Caching for frequently accessed data (e.g., `@cache.cached(timeout=60)`).
+  - Optimize database queries (e.g., eager loading, indexing).
+  - Use connection pooling for database connections.
+  - Implement proper database session management.
+  - Use background tasks (e.g., Celery) for time-consuming operations if resources allow.
+- **Bootstrap**:
+  - Minimize file sizes by including only necessary Bootstrap components.
+  - Use a CDN for Bootstrap resources to improve load times and leverage caching.
+  - Optimize images and assets for faster loading, especially for Raspberry Pi 5 users.
+- **For Raspberry Pi 5**:
+  - Minimize CPU and memory usage; avoid heavy computations or large in-memory data structures.
+  - Use lightweight alternatives where possible (e.g., SQLite instead of PostgreSQL).
+
+---
+
+### **Key Conventions**
+1. Use Flask's application and request contexts appropriately.
+2. Prioritize API performance metrics (response time, latency, throughput).
+3. Structure the application:
+   - Use Blueprints for modularization.
+   - Separate concerns (routes, business logic, data access).
+   - Use environment variables for configuration management. 
+4. Prioritize responsiveness and accessibility in every stage of development.
+5. Maintain a clear and organized file structure for both Python and frontend code.
+
+---
+
+### **Additional Notes**
+- **No Authentication**: Omit JWT or other auth-related dependencies and configurations.
+- **Raspberry Pi 5**: Prioritize lightweight solutions and monitor performance closely; avoid resource-heavy operations.
+- Refer to the Flask and Bootstrap documentation for best practices and detailed usage patterns.
+
+---
+
+### **Deployment**
+- Use Gunicorn or uWSGI as the WSGI HTTP Server.
+- Implement proper logging and monitoring in production.
+- Use environment variables for sensitive information and configuration (e.g., `os.getenv("DATABASE_URL")`).
+- **For Raspberry Pi 5**:
+  - Use a lightweight web server like Gunicorn with a single worker to conserve resources.
+  - Monitor resource usage (CPU, memory) and optimize as needed.
+  - Consider using a reverse proxy like Nginx for static file serving.
+  
+---
+
+### **GitHub and Version Control**
+- Use Git for version control with clear, descriptive commit messages (e.g., "feat: add user API endpoint").
+- Follow a branching strategy (e.g., feature branches, pull requests).
+- Use GitHub Actions for CI/CD:
+  - Run linting (e.g., `flake8`), testing (e.g., `pytest`), and deployment checks.
+  - Automate deployment to the Raspberry Pi 5 on successful merges to `main`.
+- Include a `.gitignore` file to exclude unnecessary files (e.g., `__pycache__`, `.env`).
+
+---
+
+### **Code Style Enforcement**
+- Use `black` for code formatting (e.g., `black .`).
+- Use `flake8` for linting (e.g., `flake8 .`).
+- Use `isort` for import sorting (e.g., `isort .`).
+- Enforce style checks in CI/CD pipelines.
+

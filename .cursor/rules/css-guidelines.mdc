@@ -1,0 +1,64 @@
+---
+description: Guidelines for CSS Coding
+globs: **/*.css, **/*.scss
+alwaysApply: false
+---
+### **CSS Guidelines**
+
+#### **Key Principles**
+- Write modular, reusable CSS with a consistent naming convention (e.g., BEM).
+- Minimize specificity and ensure cross-browser compatibility.
+- Prioritize maintainability and clarity.
+
+---
+
+#### **Frontend Guidelines**
+- Organize CSS files in `static/css` with a main file (e.g., `main.css`) and modular component files.
+- Use Bootstrap's utilities and components to minimize custom CSS.
+
+---
+
+#### **Error Handling and Validation**
+- Ensure CSS does not break layouts or functionality.
+
+---
+
+#### **Dependencies**
+- Use Bootstrap's CSS as the primary styling framework; avoid additional frameworks.
+
+---
+
+#### **CSS-Specific Guidelines**
+- Use CSS variables for theming, prefer classes over IDs, and use relative units (e.g., rem, em).
+- Implement media queries for responsiveness.
+
+---
+
+#### **CSS Usage**
+- Leverage Bootstrap's grid and utility classes (e.g., `col-md-6`, `mt-3`) extensively.
+- Write minimal custom CSS; avoid overriding Bootstrap defaults unnecessarily.
+
+---
+
+#### **Performance Optimization**
+- Minimize CSS file sizes; avoid complex selectors or deep nesting.
+- **For Raspberry Pi 5**:
+  - Keep CSS lean to reduce parsing time; avoid resource-intensive animations.
+
+---
+
+#### **Key Conventions**
+1. Follow BEM or a similar methodology for class naming.
+2. Group related styles and use comments to section CSS.
+
+---
+
+#### **Code Style Enforcement**
+- Use Stylelint for linting (e.g., `stylelint "**/*.css"`).
+- Enforce style checks in CI/CD pipelines.
+
+---
+
+### **Additional Notes**
+- Refer to CSS (e.g., CSS Tricks, Bootstrap docs) documentation for best practices.
+

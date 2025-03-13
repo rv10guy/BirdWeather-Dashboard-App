@@ -1,0 +1,89 @@
+---
+description: General Guidelines for Bootstrap
+globs: **/*.html, **/*.css, **/*.scss
+alwaysApply: false
+---
+
+### **Key Principles**
+- Write clear, concise, and technical responses with accurate Python and Bootstrap code.
+- Use functional, declarative programming in Python; avoid classes except for Flask views.
+- Prefer iteration and modularization over code duplication.
+- Use descriptive variable and class names with auxiliary verbs (e.g., `is_active`, `has_permission` for Python; `.is-active`, `.has-permission` for Bootstrap).
+- Use lowercase with underscores for directories and files (e.g., `blueprints/user_routes.py`, `static/css/main.css`).
+- Favor named exports for Python routes and utility functions.
+- Use the Receive an Object, Return an Object (RORO) pattern in Python where applicable.
+- Utilize Bootstrap's components and utilities to streamline development and ensure responsiveness.
+- Prioritize maintainability, readability, and clean coding practices in both Python and HTML/CSS.
+- Use descriptive class names and structure in HTML/CSS to promote clarity and collaboration.
+
+---
+
+### **Frontend Guidelines (Bootstrap)**
+- Use Jinja2 templates for rendering Bootstrap pages (e.g., `{% extends "base.html" %}`).
+- Organize static files in `static/css`, `static/js`, etc.
+- Use Bootstrap's grid and components for consistent, responsive design.
+- Minimize custom CSS; leverage Bootstrap's utilities and components.
+
+---
+
+### **Error Handling and Validation**
+- **Bootstrap**:
+  - Implement form validation using Bootstrap's built-in styles and classes for user feedback.
+  - Display error messages using Bootstrap's alert component.
+  - Structure forms with appropriate labels, placeholders, and error messages.
+
+---
+
+### **Dependencies**
+- **Bootstrap**:
+  - Bootstrap (latest version, CSS and JS)
+  - (Optional) jQuery or other JS frameworks for interactive components
+- **Note**: Avoid unnecessary dependencies to keep the app lightweight for Raspberry Pi 5 deployment.
+
+---
+
+
+### **Bootstrap-Specific Guidelines**
+- Customize Bootstrap's Sass variables and mixins for theming without overriding defaults.
+- Use Bootstrap's responsive utilities (e.g., `d-none d-md-block`) for visibility and layout control.
+- Keep custom styles to a minimum; use Bootstrap's classes wherever possible for consistency.
+- Refer to Bootstrap's documentation for component behavior and customization options.
+
+---
+
+### **Bootstrap Usage**
+- Leverage Bootstrap's grid system for responsive layouts (e.g., `container`, `row`, `col-md-6`).
+- Use Bootstrap components (e.g., buttons, modals, alerts) to enhance UX without extensive custom CSS.
+- Apply Bootstrap's utility classes for quick styling (e.g., `mt-3`, `text-center`, `d-none`).
+- Ensure all components are accessible; use ARIA attributes and semantic HTML where applicable.
+
+
+### **Performance Optimization**
+- **Bootstrap**:
+  - Minimize file sizes by including only necessary Bootstrap components.
+  - Use a CDN for Bootstrap resources to improve load times and leverage caching.
+  - Optimize images and assets for faster loading, especially for Raspberry Pi 5 users.
+- **For Raspberry Pi 5**:
+  - Minimize CPU and memory usage; avoid heavy computations or large in-memory data structures.
+  - Use lightweight alternatives where possible (e.g., SQLite instead of PostgreSQL).
+
+---
+
+### **Key Conventions**
+1. Follow Bootstrap's naming conventions and class structures.
+2. Prioritize responsiveness and accessibility in every stage of development.
+3. Maintain a clear and organized file structure for the code.
+
+---
+
+
+### **Code Style Enforcement**
+- Use `black` for code formatting (e.g., `black .`).
+- Use `flake8` for linting (e.g., `flake8 .`).
+- Use `isort` for import sorting (e.g., `isort .`).
+- Enforce style checks in CI/CD pipelines.
+
+---
+
+### **Additional Notes**
+- Refer to Bootstrap documentation for best practices and detailed usage patterns.

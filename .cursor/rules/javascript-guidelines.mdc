@@ -1,0 +1,77 @@
+---
+description: Javascript Guidelines
+globs: **/*.js
+alwaysApply: false
+---
+### **JavaScript Guidelines**
+
+### **Overall Guidelines ###
+– Always prefer simple solutions  
+– Avoid duplication of code whenever possible, which means checking for other areas of the codebase that might already have similar code and functionality  
+– Write code that takes into account the different environments: dev, test, and prod  
+– You are careful to only make changes that are requested or you are confident are well understood and related to the change being requested  
+– When fixing an issue or bug, do not introduce a new pattern or technology without first exhausting all options for the existing implementation. And if you finally do this, make sure to remove the old implementation afterwards so we don’t have duplicate logic.  
+– Keep the codebase very clean and organized  
+– Avoid writing scripts in files if possible, especially if the script is likely only to be run once   
+– Mocking data is only needed for tests, never mock data for dev or prod  
+– Never add stubbing or fake data patterns to code that affects the dev or prod environments  
+– Never overwrite my .env file without first asking and confirming
+
+#### **Key Principles**
+- Write modular, reusable JavaScript code using ES6+ features.
+- Avoid global variables; use modules and scoped variables.
+- Ensure compatibility with modern browsers.
+- Prioritize maintainability and readability.
+
+---
+
+#### **Frontend Guidelines**
+- Organize JavaScript files in `static/js` with consistent naming (e.g., `main.js`, `utils.js`).
+- Leverage Bootstrap's JavaScript components where applicable.
+
+---
+
+#### **Error Handling and Validation**
+- Implement client-side form validation with try-catch for error-prone code.
+- Display user-friendly error messages using Bootstrap's alert component.
+
+---
+
+#### **Dependencies**
+- Use lightweight libraries only if necessary; avoid unnecessary dependencies for Raspberry Pi 5.
+
+---
+
+#### **JavaScript-Specific Guidelines**
+- Use `const` and `let`, arrow functions, and template literals.
+- Implement event delegation for efficient event handling.
+
+---
+
+#### **JavaScript Usage**
+- Use vanilla JavaScript where possible; integrate with Bootstrap's components (e.g., modals).
+- Ensure scripts load after the DOM is ready (e.g., `defer` or DOMContentLoaded event).
+
+---
+
+#### **Performance Optimization**
+- Minimize DOM manipulations; use debouncing/throttling for event handlers.
+- **For Raspberry Pi 5**:
+  - Avoid heavy computations; use Web Workers for background tasks if needed.
+
+---
+
+#### **Key Conventions**
+1. Use camelCase for variables and functions.
+2. Write self-documenting code with meaningful names.
+3. Comment complex logic.
+
+---
+
+#### **Code Style Enforcement**
+- Use ESLint for linting (e.g., `eslint .`).
+- Enforce style checks in CI/CD pipelines.
+
+### **Additional Notes**
+- Refer to JavaScript (e.g., MDN) documentation for best practices.
+

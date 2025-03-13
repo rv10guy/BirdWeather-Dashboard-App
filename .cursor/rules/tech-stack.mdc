@@ -1,6 +1,6 @@
 ---
 description: Tech Stack for BirdWeather Dashboard
-globs: 
+globs: **/*.py, **/*.js, **/*.html, **/*.css, **/*.scss
 alwaysApply: false
 ---
 

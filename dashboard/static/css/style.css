@@ -1,0 +1,57 @@
+/* Custom styles for BirdWeather Dashboard */
+
+/* General styles */
+body {
+    background-color: #f8f9fa;
+    color: #343a40;
+}
+
+/* Card enhancements */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border-radius: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    border-top-left-radius: 0.5rem !important;
+    border-top-right-radius: 0.5rem !important;
+}
+
+/* Weather card specific styles */
+#weather-data .h1 {
+    font-size: 3rem;
+    font-weight: 300;
+    margin-bottom: 0;
+}
+
+/* Bird sightings specific styles */
+#bird-sightings .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* Navbar customization */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 1rem;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Footer customization */
+footer {
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #weather-data .h1 {
+        font-size: 2.5rem;
+    }
+} 
