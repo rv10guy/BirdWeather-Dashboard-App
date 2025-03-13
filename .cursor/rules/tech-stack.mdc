@@ -1,0 +1,18 @@
+---
+description: Tech Stack for BirdWeather Dashboard
+globs: 
+alwaysApply: false
+---
+
+## Tech Stack
+- **Backend**:
+  - Flask (Python 3.8+)
+- **Frontend**:
+  - HTML5 with Jinja2 templating
+  - Bootstrap 5 (via CDN)
+  - Custom CSS
+  - Vanilla JavaScript
+- **Data**:
+  - SQLite (mock data in `mock_data.json`)
+- **Display**:
+  - Chromium in kiosk mode on Raspberry Pi

@@ -1,0 +1,27 @@
+# Dashboard Application Configuration Example
+
+# Server settings
+server:
+  host: "127.0.0.1"
+  port: 8080
+  debug: true
+
+# Database settings
+database:
+  type: "sqlite"  # sqlite, postgresql, mysql
+  name: "dashboard.db"
+  # For other database types:
+  # host: "localhost"
+  # port: 5432
+  # username: "user"
+  # password: "password"
+
+# Logging settings
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: "logs/dashboard.log"
+
+# Authentication settings
+auth:
+  secret_key: "your-secret-key"
+  token_expire_minutes: 60 
