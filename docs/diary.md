@@ -412,6 +412,49 @@ The pagination issues have been resolved, resulting in more efficient database u
 
 ---
 
+## [2025-03-21] Database Update Process: Major Efficiency Improvement
+
+### Summary
+Significantly improved the database update process by replacing the individual detection processing approach with a consolidated species-based approach. This change leverages the recently created Species Detection Statistics API function to make the database update process much more efficient, reducing API calls and processing time while maintaining all core functionality.
+
+### Key Improvements
+- **Optimized Database Update Logic**:
+  - Replaced paging through individual detections with a single consolidated API call
+  - Changed from detection-centric to species-centric processing approach
+  - Reduced API calls dramatically (from potentially hundreds to just one)
+  - Maintained backwards compatibility with existing code and functionality
+
+- **Performance Enhancements**:
+  - Significantly faster database updates (especially for stations with many detections)
+  - Reduced network traffic by eliminating pagination of individual detections
+  - More efficient species checking (each species is checked once regardless of detection count)
+  - Improved progress logging focused on species processing
+
+- **Technical Implementation**:
+  - Updated `update_database` function to use `get_species_detection_stats`
+  - Modified data processing logic to handle species statistics format
+  - Updated progress tracking to report on species instead of individual detections
+  - Maintained the same statistics reporting and error handling
+
+### Technical Details
+- Converted from cursor-based pagination of thousands of individual detections to a single API call
+- Modified the way "newest detection date" is tracked and updated
+- Updated the progress logging to show percentage of species processed
+- Thoroughly tested by deleting and rebuilding the database from scratch
+
+### Files with Significant Changes
+- `dashboard/utils/database.py` - Updated update_database function to use get_species_detection_stats
+- Added import for `get_species_detection_stats` to the file
+
+### Current Status
+The database update process is now significantly more efficient and has been thoroughly tested. The process maintains all the same functionality as before but with greatly improved performance. Testing confirmed that the new implementation correctly adds missing bird species and updates the last detection date.
+
+### Next Steps
+- Consider implementing caching of species data to further reduce API calls
+- Add option for real-time database updates during dashboard usage
+- Optimize image downloading process for better performance
+- Add database migration capabilities for future schema changes
+
 ## [2025-03-20] API Integration: Improved Species Detection Statistics
 
 ### Summary

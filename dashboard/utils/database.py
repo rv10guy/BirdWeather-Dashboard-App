@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from dashboard.models import db
 from dashboard.models.bird import Bird
 from dashboard.models.metadata import Metadata
-from dashboard.utils.birdweather_api import get_bird_detections, get_bird_species_info
+from dashboard.utils.birdweather_api import get_bird_detections, get_bird_species_info, get_species_detection_stats
 
 def initialize_database(config):
     """
@@ -185,73 +185,59 @@ def update_database(config):
         # Prepare period for API request
         period = {"count": days_diff, "unit": "day"}
         
-        # Get an initial count of detections for status updates
+        # Use the new consolidated API call to get all species detection stats
         try:
-            detection_data = get_bird_detections(config, period, limit=1)
-            stats["total_detections"] = detection_data.get("total_count", 0)
-            logging.info(f"Found {stats['total_detections']} detections to process")
+            species_stats_list = get_species_detection_stats(config, period)
+            
+            # Calculate total detections for progress reporting
+            total_detections = sum(species_stat.get("count", 0) for species_stat in species_stats_list)
+            stats["total_detections"] = total_detections
+            logging.info(f"Found {total_detections} detections across {len(species_stats_list)} species to process")
+            
+            newest_detection_date = last_detection_date
+            
+            # Process each species from the detection stats
+            for species_stats in species_stats_list:
+                species_id = species_stats.get("species_id")
+                latest_detection = species_stats.get("latest_detection")
+                count = species_stats.get("count", 0)
+                
+                if not species_id:
+                    continue
+                
+                # Update newest detection date if needed
+                if latest_detection and latest_detection > newest_detection_date:
+                    newest_detection_date = latest_detection
+                
+                # Check if species exists in database
+                with current_app.app_context():
+                    # Use Session.get() instead of Query.get()
+                    bird = db.session.get(Bird, species_id)
+                    
+                    # If species doesn't exist, add it
+                    if not bird:
+                        # Create a new session context for adding the bird
+                        bird = add_bird_species(config, species_id)
+                        if bird:
+                            stats["new_species_added"] += 1
+                
+                # Count all detections for this species
+                stats["detections_processed"] += count
+                
+                # Log progress periodically
+                if len(species_stats_list) > 10 and (species_stats_list.index(species_stats) + 1) % 5 == 0:
+                    progress = ((species_stats_list.index(species_stats) + 1) / len(species_stats_list)) * 100
+                    logging.info(f"Processed {species_stats_list.index(species_stats) + 1} of {len(species_stats_list)} species ({progress:.1f}%)")
+            
+            # Update the last detection date in the database
+            if newest_detection_date and newest_detection_date > last_detection_date:
+                with current_app.app_context():
+                    Metadata.set_last_detection_date(newest_detection_date)
+                stats["last_detection_date"] = newest_detection_date
+                logging.info(f"Updated last detection date to {newest_detection_date}")
+                
         except Exception as e:
-            logging.error(f"Failed to get detection count: {e}")
-            stats["total_detections"] = "unknown"
-        
-        # Process detections in batches
-        batch_size = 100
-        has_next_page = True
-        end_cursor = None
-        newest_detection_date = last_detection_date
-        
-        while has_next_page:
-            try:
-                # Get batch of detections with pagination cursor
-                detection_data = get_bird_detections(config, period, limit=batch_size, after_cursor=end_cursor)
-                detections = detection_data.get("detections", [])
-                has_next_page = detection_data.get("has_next_page", False)
-                end_cursor = detection_data.get("end_cursor")
-                
-                if not detections:
-                    logging.info("No more detections to process")
-                    break
-                
-                # Process each detection
-                for detection in detections:
-                    species_id = detection.get("species_id")
-                    timestamp = detection.get("timestamp")
-                    
-                    # Update newest detection date if needed
-                    if timestamp and timestamp > newest_detection_date:
-                        newest_detection_date = timestamp
-                    
-                    # Check if species exists in database
-                    with current_app.app_context():
-                        # Use Session.get() instead of Query.get()
-                        bird = db.session.get(Bird, species_id)
-                        
-                        # If species doesn't exist, add it
-                        if not bird and species_id:
-                            # Create a new session context for adding the bird
-                            bird = add_bird_species(config, species_id)
-                            if bird:
-                                stats["new_species_added"] += 1
-                    
-                    stats["detections_processed"] += 1
-                
-                # Log progress
-                if stats["total_detections"] != "unknown":
-                    progress = (stats["detections_processed"] / stats["total_detections"]) * 100
-                    logging.info(f"Processed {stats['detections_processed']} of {stats['total_detections']} detections ({progress:.1f}%)")
-                else:
-                    logging.info(f"Processed {stats['detections_processed']} detections")
-                
-            except Exception as e:
-                logging.error(f"Error processing detection batch: {e}")
-                break
-        
-        # Update the last detection date in the database
-        if newest_detection_date and newest_detection_date > last_detection_date:
-            with current_app.app_context():
-                Metadata.set_last_detection_date(newest_detection_date)
-            stats["last_detection_date"] = newest_detection_date
-            logging.info(f"Updated last detection date to {newest_detection_date}")
+            logging.error(f"Error processing species detection stats: {e}")
         
         logging.info(f"Database update complete: {stats['detections_processed']} detections processed, {stats['new_species_added']} new species added")
         return stats
