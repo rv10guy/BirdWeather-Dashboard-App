@@ -8,7 +8,7 @@ import json
 import logging
 import datetime
 from pathlib import Path
-from flask import Flask, render_template
+from flask import Flask, render_template, current_app
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -43,6 +43,42 @@ def setup_logging(config):
         logging_config['filename'] = log_file
     
     logging.basicConfig(**logging_config)
+
+def setup_database(app, config):
+    """Set up and configure the database."""
+    from dashboard.models import init_db
+    from dashboard.utils.database import initialize_database, update_database
+    
+    # Configure SQLAlchemy
+    db_path = config.get('database', {}).get('path', 'data/birdweather.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Initialize SQLAlchemy with the app
+    init_db(app)
+    
+    # Ensure bird images directory exists
+    birds_img_dir = config.get('database', {}).get('birds_img_dir', 'static/img/birds')
+    os.makedirs(Path(app.root_path) / birds_img_dir, exist_ok=True)
+    
+    with app.app_context():
+        # Initialize database if needed
+        is_new_db = initialize_database(config)
+        
+        # Update database with new detections
+        if is_new_db:
+            logging.info("New database created, starting initial data load...")
+        else:
+            logging.info("Database exists, starting update process...")
+        
+        update_stats = update_database(config)
+        
+        # Log update results
+        if update_stats['detections_processed'] > 0:
+            logging.info(f"Processed {update_stats['detections_processed']} detections")
+            logging.info(f"Added {update_stats['new_species_added']} new bird species")
+        else:
+            logging.info("No new detections to process")
 
 def load_mock_data():
     """Load mock data from JSON file."""
@@ -92,6 +128,9 @@ def main():
     app.config['DEBUG'] = config.get('server', {}).get('debug', True)
     host = config.get('server', {}).get('host', '127.0.0.1')
     port = config.get('server', {}).get('port', 8080)
+    
+    # Set up and initialize the database
+    setup_database(app, config)
     
     logging.info(f"Starting dashboard application on {host}:{port}")
     app.run(host=host, port=port)

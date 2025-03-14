@@ -36,6 +36,12 @@ logs/
 # Database
 *.db
 *.sqlite3
+data/birdweather.db
+data/*.db
+
+# Bird images
+dashboard/static/img/birds/*
+!dashboard/static/img/birds/.gitkeep
 
 # IDE
 .idea/

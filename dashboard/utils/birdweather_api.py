@@ -104,7 +104,8 @@ def get_bird_detections(
     config: Dict[str, Any],
     period: Dict[str, Union[int, str]],
     species_ids: Optional[List[str]] = None,
-    limit: Optional[int] = None
+    limit: Optional[int] = None,
+    after_cursor: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Retrieve detailed bird detections from the BirdWeather API.
@@ -114,6 +115,7 @@ def get_bird_detections(
         period: Dictionary specifying the time period, e.g. {"count": 7, "unit": "day"}
         species_ids: Optional list of species IDs to filter by
         limit: Optional limit on the number of detections to return
+        after_cursor: Optional cursor for pagination
     
     Returns:
         Dictionary containing detection data with the following structure:
@@ -150,11 +152,13 @@ def get_bird_detections(
     if not all([api_url, api_key, station_id]):
         raise ValueError("Incomplete BirdWeather API configuration")
     
-    # Prepare GraphQL query with optional limit parameter
+    # Prepare GraphQL query with optional limit parameter and cursor
     limit_param = f", first: {limit}" if limit else ""
+    after_param = f", after: \"{after_cursor}\"" if after_cursor else ""
+    
     query = f"""
     query detections($period: InputDuration, $stationIds: [ID!], $speciesIds: [ID!]) {{
-        detections(period: $period, stationIds: $stationIds, speciesIds: $speciesIds{limit_param}) {{
+        detections(period: $period, stationIds: $stationIds, speciesIds: $speciesIds{limit_param}{after_param}) {{
             edges {{
                 node {{
                     confidence
