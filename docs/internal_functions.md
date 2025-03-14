@@ -9,6 +9,7 @@ This document describes the internal functions used by the BirdWeather Dashboard
    2. [Bird Detections](#bird-detections)
    3. [Bird Species Information](#bird-species-information)
    4. [Species Detection Statistics](#species-detection-statistics)
+   5. [Station Information](#station-information)
 
 ---
 
@@ -483,6 +484,149 @@ query detections($period: InputDuration, $stationIds: [ID!], $speciesId: ID) {
             }
         }
         totalCount
+    }
+}
+```
+
+### Station Information
+
+**Function**: `get_station_info`
+
+**Purpose**: Retrieves comprehensive information about a BirdWeather station, including location data, environmental sensors, system status, and detection statistics.
+
+**Module**: `dashboard.utils.birdweather_api`
+
+**Signature**:
+```python
+def get_station_info(
+    config: Dict[str, Any],
+    station_id: Optional[str] = None
+) -> Dict[str, Any]
+```
+
+**Parameters**:
+- `config`: Configuration dictionary containing API settings
+- `station_id`: Optional station ID to override the one in config
+
+**Returns**:
+- Dictionary containing detailed station information including coordinates, sensor data, and detection statistics
+- The response includes processed values with appropriate units and formatting
+- Environmental data includes AQI, barometric pressure, humidity, temperature (both C and F), and more
+- System data includes battery status, SD card information, and Wi-Fi signal strength
+- Detection statistics show the total number of detections and unique species
+
+**Exceptions**:
+- `ValueError`: If the API configuration is missing or invalid, or if the API returns an error
+- `requests.RequestException`: If the API request fails due to network issues
+
+**Example Usage**:
+
+```python
+from dashboard.utils.birdweather_api import get_station_info
+
+# Get configuration
+config = load_config()
+
+# Get station information using the station ID from config
+station_info = get_station_info(config)
+
+# Or specify a different station ID
+specific_station_info = get_station_info(config, station_id="12345")
+
+# Access specific information
+print(f"Station: {station_info['name']}")
+print(f"Location: {station_info['coords']['lat']}, {station_info['coords']['lon']}")
+print(f"Temperature: {station_info['sensors']['environment']['temperature']['fahrenheit']}°F")
+print(f"Battery: {station_info['sensors']['system']['battery_voltage']}V")
+print(f"Total Detections: {station_info['detections']['total_count']}")
+```
+
+**Example Output**:
+
+```python
+{
+    "coords": {
+        "lat": 29.621599,
+        "lon": -95.622917
+    },
+    "earliest_detection_at": "2025-01-08T18:58:17-06:00",
+    "latest_detection_at": "2025-03-14T15:01:51-05:00",
+    "name": "PUC-10900",
+    "sensors": {
+        "environment": {
+            "aqi": {
+                "value": 25,
+                "status": "Good"
+            },
+            "barometric_pressure": 1002.2,
+            "eco2": 521,
+            "humidity": 49.6,
+            "temperature": {
+                "celsius": 32.68000030517578,
+                "fahrenheit": 90.8
+            },
+            "voc": 0.18
+        },
+        "system": {
+            "battery_voltage": 4.96,
+            "power_source": "USB-C",
+            "sd_capacity_gb": 29.11,
+            "sd_available_gb": 28.45,
+            "uploading_completed": null,
+            "uploading_total": null,
+            "wifi_rssi": -56
+        }
+    },
+    "detections": {
+        "total_count": 96108,
+        "species_count": 83
+    }
+}
+```
+
+**Notes**:
+- The function requires a valid API key in the configuration
+- The function combines two separate GraphQL queries into a single request for efficiency
+- AQI status is automatically determined based on the numeric value (0-50: Good, 51-100: Moderate, 101+: Unhealthy)
+- Temperature is provided in both Celsius (original) and Fahrenheit (converted)
+- SD card capacity values are converted from bytes to gigabytes
+- The detection statistics use a fixed period of the last 2 months
+- System uploading values may be null depending on the station's current status
+
+**GraphQL Query**:
+```graphql
+query StationInfo($stationId: ID!, $stationIds: [ID!], $period: InputDuration) {
+    station(id: $stationId) {
+        coords {
+            lat
+            lon
+        }
+        earliestDetectionAt
+        latestDetectionAt
+        name
+        sensors {
+            environment {
+                aqi
+                barometricPressure
+                eco2
+                humidity
+                temperature
+                voc
+            }
+            system {
+                batteryVoltage
+                powerSource
+                sdCapacity
+                sdAvailable
+                uploadingCompleted
+                uploadingTotal
+                wifiRssi
+            }
+        }
+    }
+    detections(stationIds: $stationIds, period: $period) {
+        totalCount
+        speciesCount
     }
 }
 ```

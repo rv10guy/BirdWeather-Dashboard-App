@@ -509,4 +509,54 @@ The species detection statistics function now correctly utilizes the BirdWeather
 
 ## [2025-03-19] API Integration: Comprehensive Species Detection Statistics
 
-// ... existing content ... 
+## [2025-03-22] API Integration: Station Information and Weather Data
+
+### Summary
+Implemented a comprehensive station information function that retrieves detailed data about the BirdWeather station, including location, environmental sensors, system status, and detection statistics. This function enhances the dashboard by providing real-time weather data and system health information to be displayed alongside bird detections.
+
+### Key Features Implemented
+- **Station Information API Function**:
+  - Created function to retrieve detailed station data from the BirdWeather API
+  - Implemented automatic formatting and unit conversion of sensor values
+  - Integrated environmental and system data in a single query
+  - Added detection statistics to provide a complete station overview
+
+- **Data Processing**:
+  - Implemented automatic conversion of temperature from Celsius to Fahrenheit
+  - Added AQI status categorization (Good, Moderate, Unhealthy)
+  - Converted SD card storage values from bytes to gigabytes
+  - Applied appropriate rounding to numeric values for better readability
+
+- **Enhanced API Integration**:
+  - Combined multiple data sources in a single GraphQL query
+  - Maintained consistent naming conventions with other API functions
+  - Added comprehensive error handling and validation
+  - Ensured proper fallback to configuration settings when needed
+
+### Technical Implementation
+- **GraphQL Integration**:
+  - Created a unified query to fetch both station data and detection statistics
+  - Extracted and processed nested response data
+  - Transformed camelCase API properties to snake_case for consistent usage
+  - Added appropriate JSON structure for complex data types
+
+- **Data Format Standardization**:
+  - Implemented consistent data structures for environmental sensors
+  - Added nested objects for complex data like temperature and AQI
+  - Applied appropriate rounding and formatting for all numeric values
+  - Used descriptive field names for better code readability
+
+### Files with Significant Changes
+- `dashboard/utils/birdweather_api.py` - Added get_station_info function
+- `docs/internal_functions.md` - Updated documentation with new function
+- `docs/diary.md` - Added development diary entry
+
+### Current Status
+The station information API function is fully implemented and documented. It successfully retrieves comprehensive station data from the BirdWeather API and processes it into a format that's ready for display in the dashboard. The function includes all requested data points with appropriate formatting and unit conversions.
+
+### Next Steps
+- Integrate the station information into the dashboard UI
+- Create a dedicated weather and station status panel
+- Implement periodic auto-refresh of station data
+- Add visual indicators for system health metrics
+- Create alerts for critical values (low battery, high temperature, etc.) 

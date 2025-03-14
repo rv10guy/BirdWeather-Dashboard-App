@@ -660,3 +660,230 @@ def get_species_detection_details(
     except requests.RequestException as e:
         logging.error(f"Failed to fetch detection details for species {species_id}: {e}")
         return None 
+
+def get_station_info(
+    config: Dict[str, Any],
+    station_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Retrieve comprehensive information about a BirdWeather station, including
+    location, sensor data, and detection statistics.
+    
+    Args:
+        config: Configuration dictionary containing API settings
+        station_id: Optional station ID to override the one in config
+    
+    Returns:
+        Dictionary containing station information with the following structure:
+        {
+            "coords": {
+                "lat": float,
+                "lon": float
+            },
+            "earliest_detection_at": str,  # ISO-8601 timestamp
+            "latest_detection_at": str,  # ISO-8601 timestamp
+            "name": str,
+            "sensors": {
+                "environment": {
+                    "aqi": {
+                        "value": int,
+                        "status": str  # "Good", "Moderate", or "Unhealthy"
+                    },
+                    "barometric_pressure": float,  # In hPa, rounded to 1 decimal place
+                    "eco2": int,
+                    "humidity": float,  # In %, rounded to 1 decimal place
+                    "temperature": {
+                        "celsius": float,  # Original value in °C
+                        "fahrenheit": float  # Converted to °F, rounded to 1 decimal place
+                    },
+                    "voc": float  # Rounded to 2 decimal places
+                },
+                "system": {
+                    "battery_voltage": float,  # In volts, rounded to 2 decimal places
+                    "power_source": str,
+                    "sd_capacity_gb": float,  # In GB, rounded to 2 decimal places
+                    "sd_available_gb": float,  # In GB, rounded to 2 decimal places
+                    "uploading_completed": int,  # May be null
+                    "uploading_total": int,  # May be null
+                    "wifi_rssi": int
+                }
+            },
+            "detections": {
+                "total_count": int,
+                "species_count": int
+            }
+        }
+    
+    Raises:
+        ValueError: If the API configuration is missing or invalid
+        requests.RequestException: If the API request fails
+    """
+    # Validate configuration
+    if not config or "api" not in config or "birdweather" not in config["api"]:
+        raise ValueError("Missing BirdWeather API configuration")
+    
+    api_config = config["api"]["birdweather"]
+    api_url = api_config.get("url")
+    api_key = api_config.get("key")
+    config_station_id = api_config.get("station_id")
+    
+    # Use provided station_id or fall back to config
+    station_id = station_id or config_station_id
+    
+    if not all([api_url, api_key, station_id]):
+        raise ValueError("Incomplete BirdWeather API configuration or missing station ID")
+    
+    # Prepare the GraphQL query
+    query = """
+    query StationInfo($stationId: ID!, $stationIds: [ID!], $period: InputDuration) {
+        station(id: $stationId) {
+            coords {
+                lat
+                lon
+            }
+            earliestDetectionAt
+            latestDetectionAt
+            name
+            sensors {
+                environment {
+                    aqi
+                    barometricPressure
+                    eco2
+                    humidity
+                    temperature
+                    voc
+                }
+                system {
+                    batteryVoltage
+                    powerSource
+                    sdCapacity
+                    sdAvailable
+                    uploadingCompleted
+                    uploadingTotal
+                    wifiRssi
+                }
+            }
+        }
+        detections(stationIds: $stationIds, period: $period) {
+            totalCount
+            speciesCount
+        }
+    }
+    """
+    
+    # Prepare variables for the query
+    variables = {
+        "stationId": station_id,
+        "stationIds": [station_id],
+        "period": {"count": 2, "unit": "month"}  # Last 2 months of detections
+    }
+    
+    # Prepare headers
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    # Make the API request
+    try:
+        response = requests.post(
+            api_url,
+            json={"query": query, "variables": variables},
+            headers=headers
+        )
+        response.raise_for_status()
+        
+        # Parse the response
+        data = response.json()
+        
+        # Check for errors in the response
+        if "errors" in data:
+            error_msg = data["errors"][0].get("message", "Unknown GraphQL error")
+            logging.error(f"BirdWeather API error: {error_msg}")
+            raise ValueError(f"BirdWeather API error: {error_msg}")
+        
+        # Extract the station data and detection counts
+        if "data" in data and "station" in data["data"] and "detections" in data["data"]:
+            station_data = data["data"]["station"]
+            detections_data = data["data"]["detections"]
+            
+            # Extract environmental sensor data
+            env_data = station_data.get("sensors", {}).get("environment", {})
+            sys_data = station_data.get("sensors", {}).get("system", {})
+            
+            # Process AQI and determine status
+            aqi_value = env_data.get("aqi")
+            aqi_status = "Good"
+            if aqi_value is not None:
+                if aqi_value > 100:
+                    aqi_status = "Unhealthy"
+                elif aqi_value > 50:
+                    aqi_status = "Moderate"
+            
+            # Process temperature (convert C to F)
+            temp_c = env_data.get("temperature")
+            temp_f = None
+            if temp_c is not None:
+                temp_f = round((temp_c * 9/5) + 32, 1)
+            
+            # Process SD card capacity (bytes to GB)
+            sd_capacity_bytes = sys_data.get("sdCapacity")
+            sd_available_bytes = sys_data.get("sdAvailable")
+            
+            sd_capacity_gb = None
+            sd_available_gb = None
+            
+            if sd_capacity_bytes is not None and sd_capacity_bytes.isdigit():
+                sd_capacity_gb = round(int(sd_capacity_bytes) / (1024 * 1024 * 1024), 2)
+            
+            if sd_available_bytes is not None and sd_available_bytes.isdigit():
+                sd_available_gb = round(int(sd_available_bytes) / (1024 * 1024 * 1024), 2)
+            
+            # Transform the data into a more consistent format with snake_case keys
+            result = {
+                "coords": {
+                    "lat": station_data.get("coords", {}).get("lat"),
+                    "lon": station_data.get("coords", {}).get("lon")
+                },
+                "earliest_detection_at": station_data.get("earliestDetectionAt"),
+                "latest_detection_at": station_data.get("latestDetectionAt"),
+                "name": station_data.get("name"),
+                "sensors": {
+                    "environment": {
+                        "aqi": {
+                            "value": aqi_value,
+                            "status": aqi_status
+                        },
+                        "barometric_pressure": round(env_data.get("barometricPressure", 0), 1) if env_data.get("barometricPressure") is not None else None,
+                        "eco2": env_data.get("eco2"),
+                        "humidity": round(env_data.get("humidity", 0), 1) if env_data.get("humidity") is not None else None,
+                        "temperature": {
+                            "celsius": temp_c,
+                            "fahrenheit": temp_f
+                        },
+                        "voc": round(env_data.get("voc", 0), 2) if env_data.get("voc") is not None else None
+                    },
+                    "system": {
+                        "battery_voltage": round(sys_data.get("batteryVoltage", 0), 2) if sys_data.get("batteryVoltage") is not None else None,
+                        "power_source": sys_data.get("powerSource"),
+                        "sd_capacity_gb": sd_capacity_gb,
+                        "sd_available_gb": sd_available_gb,
+                        "uploading_completed": sys_data.get("uploadingCompleted"),
+                        "uploading_total": sys_data.get("uploadingTotal"),
+                        "wifi_rssi": sys_data.get("wifiRssi")
+                    }
+                },
+                "detections": {
+                    "total_count": detections_data.get("totalCount"),
+                    "species_count": detections_data.get("speciesCount")
+                }
+            }
+            
+            return result
+        else:
+            logging.warning(f"No station data found for ID {station_id}")
+            return {}
+            
+    except requests.RequestException as e:
+        logging.error(f"Failed to fetch station information: {e}")
+        raise 
