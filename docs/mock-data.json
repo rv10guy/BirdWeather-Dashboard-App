@@ -1,0 +1,111 @@
+{
+    "recent_detections": [
+      {
+        "id": 1,
+        "bird_name": "American Robin",
+        "detection_time": "2023-01-15T08:32:45",
+        "confidence": 0.95,
+        "location": "Station Alpha"
+      },
+      {
+        "id": 2,
+        "bird_name": "Northern Cardinal",
+        "detection_time": "2023-01-15T09:12:30",
+        "confidence": 0.89,
+        "location": "Station Alpha"
+      },
+      {
+        "id": 3,
+        "bird_name": "Blue Jay",
+        "detection_time": "2023-01-15T10:05:18",
+        "confidence": 0.92,
+        "location": "Station Alpha"
+      }
+    ],
+    "detection_summary": [
+      {
+        "bird_name": "American Robin",
+        "count": 12,
+        "last_detection_time": "3 hours ago"
+      },
+      {
+        "bird_name": "Northern Cardinal",
+        "count": 8,
+        "last_detection_time": "5 hours ago"
+      },
+      {
+        "bird_name": "Blue Jay",
+        "count": 15,
+        "last_detection_time": "2 hours ago"
+      }
+    ],
+    "birds": {
+      "American Robin": {
+        "scientific_name": "Turdus migratorius",
+        "image": "robin_full.jpg",
+        "thumbnail": "robin_thumb.jpg",
+        "summary": "The American robin is a migratory songbird of the true thrush genus and Turdidae, the wider thrush family. It is named after the European robin because of its reddish-orange breast, though the two species are not closely related.",
+        "common": true
+      },
+      "Northern Cardinal": {
+        "scientific_name": "Cardinalis cardinalis",
+        "image": "cardinal_full.jpg",
+        "thumbnail": "cardinal_thumb.jpg",
+        "summary": "The northern cardinal is a bird in the genus Cardinalis. It is also known colloquially as the redbird, common cardinal, red cardinal, or just cardinal. It can be found in southeastern Canada, through the eastern United States from Maine to Minnesota to Texas, and south through Mexico.",
+        "common": false
+      },
+      "Blue Jay": {
+        "scientific_name": "Cyanocitta cristata",
+        "image": "bluejay_full.jpg",
+        "thumbnail": "bluejay_thumb.jpg",
+        "summary": "The blue jay is a passerine bird in the family Corvidae, native to eastern North America. It resides through most of eastern and central United States, although eastern populations may be migratory. Blue jays are known for their intelligence and complex social systems.",
+        "common": false
+      }
+    },
+    "weather": {
+      "current": {
+        "temperature": 72,
+        "temperatureUnit": "F",
+        "condition": "Partly Cloudy",
+        "icon": "https://placehold.co/100x100/4A90E2/FFFFFF?text=Cloudy"
+      },
+      "forecast": [
+        {
+          "day": "Monday",
+          "high": 75,
+          "low": 58,
+          "condition": "Sunny"
+        },
+        {
+          "day": "Tuesday",
+          "high": 72,
+          "low": 60,
+          "condition": "Partly Cloudy"
+        },
+        {
+          "day": "Wednesday",
+          "high": 68,
+          "low": 55,
+          "condition": "Rain"
+        }
+      ]
+    },
+    "station": {
+      "primary": {
+        "name": "Station Alpha",
+        "status": "Online",
+        "last_detection": "2023-01-15T10:05:18",
+        "battery": 85,
+        "signal": 95
+      },
+      "secondary": [
+        {
+          "name": "Station Beta",
+          "status": "Offline",
+          "last_detection": "2023-01-14T18:30:45",
+          "battery": 45,
+          "signal": 0
+        }
+      ]
+    }
+  }
