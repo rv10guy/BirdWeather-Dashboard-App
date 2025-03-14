@@ -410,4 +410,60 @@ The pagination issues have been resolved, resulting in more efficient database u
 - Add more detailed progress reporting
 - Consider adding a detection cache to further reduce API calls
 
---- 
+---
+
+## [2025-03-20] API Integration: Improved Species Detection Statistics
+
+### Summary
+Updated the species detection statistics function to properly utilize the BirdWeather API's filtering capabilities. The function now uses the API's native species filtering parameters instead of performing filtering in memory, resulting in more efficient and accurate data retrieval.
+
+### Key Improvements
+- **Enhanced API Integration**:
+  - Updated the function to use the `speciesId` parameter supported by both the topSpecies and detections API endpoints
+  - Implemented separate API calls for each species ID when filtering multiple species
+  - Removed unnecessary in-memory filtering of results
+  - Restructured the code for better organization and maintainability
+
+- **Error Handling Enhancement**:
+  - Isolated errors for individual species to prevent total function failure
+  - Added species-specific error logging for better troubleshooting
+  - Improved handling of edge cases and empty responses
+  - Created a helper function to extract detection details for cleaner code
+
+- **API Efficiency**:
+  - Directly leveraged API filtering capabilities for more precise data retrieval
+  - Optimized the number of API calls when handling multiple species
+  - Updated documentation to reflect the API's actual capabilities
+  - Fixed misleading information in the internal documentation
+
+### Technical Implementation
+- **Code Reorganization**:
+  - Refactored the function to handle both filtered and unfiltered queries
+  - Created helper function `get_species_detection_details` to improve code organization
+  - Updated error handling for more granular error reporting
+  - Fixed GraphQL query structure for the topSpecies endpoint
+
+- **API Utilization**:
+  - Properly implemented the API's speciesId parameter
+  - Updated query variables and structure to match API requirements
+  - Fixed incorrect assumptions about API filtering capabilities
+  - Validated approach against API documentation and examples
+
+### Files with Significant Changes
+- `dashboard/utils/birdweather_api.py` - Updated get_species_detection_stats function and added helper function
+- `docs/internal_functions.md` - Corrected documentation about API capabilities
+- `tests/test_species_stats.py` - Validated changes through testing
+
+### Current Status
+The species detection statistics function now correctly utilizes the BirdWeather API's native filtering capabilities, resulting in more efficient and accurate data retrieval. The function has been thoroughly tested and is ready for integration with the dashboard UI.
+
+### Next Steps
+- Integrate the improved function with the dashboard UI
+- Create a dedicated view for species detection statistics
+- Add caching mechanism to reduce API calls for frequently accessed data
+- Implement automatic refresh of detection statistics on the dashboard
+- Add sorting and filtering options based on detection statistics
+
+## [2025-03-19] API Integration: Comprehensive Species Detection Statistics
+
+// ... existing content ... 

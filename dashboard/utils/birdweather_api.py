@@ -361,3 +361,302 @@ def get_bird_species_info(
     except requests.RequestException as e:
         logging.error(f"Failed to fetch bird species info: {e}")
         raise 
+
+
+def get_species_detection_stats(
+    config: Dict[str, Any],
+    period: Dict[str, Union[int, str]],
+    station_id: Optional[str] = None,
+    species_ids: Optional[List[str]] = None,
+    limit: Optional[int] = None
+) -> List[Dict[str, Any]]:
+    """
+    Retrieve comprehensive detection statistics for bird species from the BirdWeather API.
+    
+    This function combines data from two API queries:
+    1. topSpecies - to get the count of detections for each species
+    2. detections - to get the most recent detection details (timestamp, confidence, etc.)
+    
+    Args:
+        config: Configuration dictionary containing API settings
+        period: Dictionary specifying the time period, e.g. {"count": 7, "unit": "day"}
+        station_id: Optional station ID to override the one in config
+        species_ids: Optional list of species IDs to filter by
+        limit: Optional limit on the number of species to return (for pagination)
+    
+    Returns:
+        List of dictionaries containing detection statistics with the following structure:
+        [
+            {
+                "species_id": "Species identifier",
+                "count": int,  # Number of detections in the period
+                "latest_detection": "ISO-8601 timestamp",
+                "probability": float,  # Probability from the most recent detection
+                "confidence": float,  # Confidence from the most recent detection
+                "score": float  # Score from the most recent detection
+            },
+            ...
+        ]
+    
+    Raises:
+        ValueError: If the API configuration is missing or invalid
+        requests.RequestException: If the API request fails
+    """
+    # Validate configuration
+    if not config or "api" not in config or "birdweather" not in config["api"]:
+        raise ValueError("Missing BirdWeather API configuration")
+    
+    api_config = config["api"]["birdweather"]
+    api_url = api_config.get("url")
+    api_key = api_config.get("key")
+    config_station_id = api_config.get("station_id")
+    
+    # Use provided station_id or fall back to config
+    station_id = station_id or config_station_id
+    
+    if not all([api_url, api_key, station_id]):
+        raise ValueError("Incomplete BirdWeather API configuration or missing station ID")
+    
+    # Prepare headers for all API requests
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    result = []
+    
+    # If species_ids is provided, we'll process each species individually
+    # If not, we'll get all top species in one request
+    if species_ids:
+        for species_id in species_ids:
+            # Step 1: Get the count for this specific species using the topSpecies query with speciesId
+            top_species_query = """
+            query topSpecies($period: InputDuration, $stationIds: [ID!], $speciesId: ID) {
+                topSpecies(period: $period, stationIds: $stationIds, speciesId: $speciesId) {
+                    count
+                    species {
+                        id
+                    }
+                }
+            }
+            """
+            
+            # Prepare variables for the top species query
+            variables = {
+                "stationIds": [station_id],
+                "period": period,
+                "speciesId": species_id
+            }
+            
+            try:
+                # Make the topSpecies API request
+                response = requests.post(
+                    api_url,
+                    json={"query": top_species_query, "variables": variables},
+                    headers=headers
+                )
+                response.raise_for_status()
+                
+                # Parse the response
+                data = response.json()
+                
+                # Check for errors in the response
+                if "errors" in data:
+                    error_msg = data["errors"][0].get("message", "Unknown GraphQL error")
+                    logging.error(f"BirdWeather API error (topSpecies for {species_id}): {error_msg}")
+                    continue  # Skip this species but continue with others
+                
+                # Extract the top species data
+                if "data" not in data or "topSpecies" not in data["data"] or not data["data"]["topSpecies"]:
+                    logging.warning(f"No top species data found for species {species_id}")
+                    continue  # Skip this species but continue with others
+                
+                # Since we're querying for a specific species, we should only get one result
+                # But topSpecies always returns a list, so we need to find our species in it
+                species_data = None
+                for item in data["data"]["topSpecies"]:
+                    if item.get("species", {}).get("id") == species_id:
+                        species_data = item
+                        break
+                
+                if not species_data:
+                    logging.warning(f"Species {species_id} not found in topSpecies response")
+                    continue  # Skip this species but continue with others
+                
+                count = species_data.get("count", 0)
+                
+                # Step 2: Get the most recent detection for this species
+                species_stats = get_species_detection_details(api_url, headers, station_id, species_id, period, count)
+                if species_stats:
+                    result.append(species_stats)
+                    
+            except requests.RequestException as e:
+                logging.error(f"Failed to fetch detection statistics for species {species_id}: {e}")
+                continue  # Skip this species but continue with others
+    else:
+        # No specific species IDs provided, get all top species
+        top_species_query = """
+        query topSpecies($period: InputDuration, $stationIds: [ID!]) {
+            topSpecies(period: $period, stationIds: $stationIds) {
+                count
+                species {
+                    id
+                }
+            }
+        }
+        """
+        
+        # Prepare variables for the top species query
+        variables = {
+            "stationIds": [station_id],
+            "period": period
+        }
+        
+        try:
+            # Make the topSpecies API request
+            response = requests.post(
+                api_url,
+                json={"query": top_species_query, "variables": variables},
+                headers=headers
+            )
+            response.raise_for_status()
+            
+            # Parse the response
+            data = response.json()
+            
+            # Check for errors in the response
+            if "errors" in data:
+                error_msg = data["errors"][0].get("message", "Unknown GraphQL error")
+                logging.error(f"BirdWeather API error (topSpecies): {error_msg}")
+                raise ValueError(f"BirdWeather API error: {error_msg}")
+            
+            # Extract the top species data
+            if "data" not in data or "topSpecies" not in data["data"]:
+                logging.warning("No top species data found in API response")
+                return []
+            
+            top_species_data = data["data"]["topSpecies"]
+            
+            # Apply limit if provided
+            if limit is not None and limit > 0:
+                top_species_data = top_species_data[:limit]
+            
+            # Process each species from the topSpecies response
+            for species_item in top_species_data:
+                species_id = species_item.get("species", {}).get("id")
+                count = species_item.get("count", 0)
+                
+                if not species_id:
+                    continue
+                
+                # Get detailed detection metrics for this species
+                species_stats = get_species_detection_details(api_url, headers, station_id, species_id, period, count)
+                if species_stats:
+                    result.append(species_stats)
+                
+        except requests.RequestException as e:
+            logging.error(f"Failed to fetch species detection statistics: {e}")
+            raise
+    
+    return result
+
+def get_species_detection_details(
+    api_url: str, 
+    headers: Dict[str, str], 
+    station_id: str, 
+    species_id: str, 
+    period: Dict[str, Union[int, str]],
+    count: int
+) -> Optional[Dict[str, Any]]:
+    """
+    Helper function to get detailed detection metrics for a specific species.
+    
+    Args:
+        api_url: The GraphQL API URL
+        headers: API request headers including authorization
+        station_id: Station ID to query
+        species_id: Species ID to query
+        period: Time period for the query
+        count: Count of detections from the topSpecies query
+        
+    Returns:
+        Dictionary with detection statistics or None if an error occurs
+    """
+    # Get the most recent detection for this species
+    detection_query = """
+    query detections($period: InputDuration, $stationIds: [ID!], $speciesId: ID) {
+        detections(period: $period, stationIds: $stationIds, speciesId: $speciesId, first: 1) {
+            edges {
+                node {
+                    confidence
+                    probability
+                    score
+                    timestamp
+                    species {
+                        id
+                    }
+                }
+            }
+            totalCount
+        }
+    }
+    """
+    
+    # Prepare variables for the detection query
+    detection_variables = {
+        "stationIds": [station_id],
+        "speciesId": species_id,
+        "period": period
+    }
+    
+    try:
+        # Make the detection API request
+        detection_response = requests.post(
+            api_url,
+            json={"query": detection_query, "variables": detection_variables},
+            headers=headers
+        )
+        detection_response.raise_for_status()
+        
+        # Parse the detection response
+        detection_data = detection_response.json()
+        
+        # Check for errors in the detection response
+        if "errors" in detection_data:
+            error_msg = detection_data["errors"][0].get("message", "Unknown GraphQL error")
+            logging.error(f"BirdWeather API error (detections for {species_id}): {error_msg}")
+            return None
+        
+        # Initialize with default values
+        confidence = None
+        probability = None
+        score = None
+        timestamp = None
+        
+        # Extract the detection data if available
+        if ("data" in detection_data and 
+            "detections" in detection_data["data"] and 
+            "edges" in detection_data["data"]["detections"] and
+            detection_data["data"]["detections"]["edges"]):
+            
+            detection_node = detection_data["data"]["detections"]["edges"][0].get("node", {})
+            
+            if detection_node:
+                confidence = detection_node.get("confidence")
+                probability = detection_node.get("probability")
+                score = detection_node.get("score")
+                timestamp = detection_node.get("timestamp")
+        
+        # Return the merged data
+        return {
+            "species_id": species_id,
+            "count": count,
+            "latest_detection": timestamp,
+            "probability": probability,
+            "confidence": confidence,
+            "score": score
+        }
+            
+    except requests.RequestException as e:
+        logging.error(f"Failed to fetch detection details for species {species_id}: {e}")
+        return None 

@@ -8,6 +8,7 @@ This document describes the internal functions used by the BirdWeather Dashboard
    1. [Daily Detection Counts](#daily-detection-counts)
    2. [Bird Detections](#bird-detections)
    3. [Bird Species Information](#bird-species-information)
+   4. [Species Detection Statistics](#species-detection-statistics)
 
 ---
 
@@ -334,6 +335,154 @@ query species($id: ID!) {
         thumbnailUrl
         wikipediaSummary
         wikipediaUrl
+    }
+}
+```
+
+### Species Detection Statistics
+
+**Function**: `get_species_detection_stats`
+
+**Purpose**: Retrieves comprehensive detection statistics for bird species by combining data from multiple API endpoints. This function merges species counts with the most recent detection details to provide a complete picture of bird activity.
+
+**Module**: `dashboard.utils.birdweather_api`
+
+**Signature**:
+```python
+def get_species_detection_stats(
+    config: Dict[str, Any],
+    period: Dict[str, Union[int, str]],
+    station_id: Optional[str] = None,
+    species_ids: Optional[List[str]] = None,
+    limit: Optional[int] = None
+) -> List[Dict[str, Any]]
+```
+
+**Parameters**:
+- `config`: Configuration dictionary containing API settings
+- `period`: Dictionary specifying the time period, e.g. `{"count": 7, "unit": "day"}`
+- `station_id`: Optional station ID to override the one in config
+- `species_ids`: Optional list of species IDs to filter by
+- `limit`: Optional limit on the number of species to return (for pagination)
+
+**Returns**:
+- List of dictionaries containing detection statistics with the following structure:
+  ```python
+  [
+      {
+          "species_id": "Species identifier",
+          "count": 123,  # Number of detections in the period
+          "latest_detection": "2025-03-20T14:32:17-05:00",
+          "probability": 0.9876,  # Probability from the most recent detection
+          "confidence": 0.7654,  # Confidence from the most recent detection
+          "score": 8.9012  # Score from the most recent detection
+      },
+      ...
+  ]
+  ```
+
+**Exceptions**:
+- `ValueError`: If the API configuration is missing or invalid, or if the API returns an error
+- `requests.RequestException`: If the API request fails due to network issues
+
+**Example Usage**:
+
+```python
+from dashboard.utils.birdweather_api import get_species_detection_stats
+
+# Get configuration
+config = load_config()
+
+# Get detection statistics for the last 7 days for all species
+period = {"count": 7, "unit": "day"}
+stats = get_species_detection_stats(config, period)
+
+# Get detection statistics for specific species in the last month
+period = {"count": 1, "unit": "month"}
+species_stats = get_species_detection_stats(
+    config, 
+    period, 
+    species_ids=["144", "111", "401"],
+    limit=10
+)
+```
+
+**Example Output**:
+
+```python
+[
+    {
+        "species_id": "111",
+        "count": 640,
+        "latest_detection": "2025-03-20T17:45:22-05:00",
+        "probability": 0.9996283054351807,
+        "confidence": 0.6235421895980835,
+        "score": 8.651334762573242
+    },
+    {
+        "species_id": "144",
+        "count": 148,
+        "latest_detection": "2025-03-20T16:30:18-05:00",
+        "probability": 0.9992398023605347,
+        "confidence": 0.5061336159706116,
+        "score": 8.262290717452016
+    },
+    {
+        "species_id": "1707",
+        "count": 138,
+        "latest_detection": "2025-03-20T15:22:45-05:00",
+        "probability": 0.9967245459556579,
+        "confidence": 0.4583125114440918,
+        "score": 7.892563819885254
+    }
+]
+```
+
+**Notes**:
+- The function makes two separate API calls for each species: one to get counts and one to get detailed detection metrics
+- For stations with many detected species, this can result in multiple API calls
+- The function uses the timestamp from the most recent detection when available
+- Error handling is implemented to skip problematic species rather than failing the entire request
+- When filtering by multiple species, the function makes separate API calls for each species ID
+- The API's native filtering capabilities are used to retrieve accurate species-specific data
+
+**GraphQL Queries**:
+```graphql
+# First query to get species counts without species filter
+query topSpecies($period: InputDuration, $stationIds: [ID!]) {
+    topSpecies(period: $period, stationIds: $stationIds) {
+        count
+        species {
+            id
+        }
+    }
+}
+
+# First query to get species counts with species filter
+query topSpecies($period: InputDuration, $stationIds: [ID!], $speciesId: ID) {
+    topSpecies(period: $period, stationIds: $stationIds, speciesId: $speciesId) {
+        count
+        species {
+            id
+        }
+    }
+}
+
+# Second query to get detection details (executed once per species)
+query detections($period: InputDuration, $stationIds: [ID!], $speciesId: ID) {
+    detections(period: $period, stationIds: $stationIds, speciesId: $speciesId, first: 1) {
+        edges {
+            node {
+                confidence
+                probability
+                score
+                timestamp
+                species {
+                    id
+                }
+            }
+        }
+        totalCount
     }
 }
 ```
