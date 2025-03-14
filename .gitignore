@@ -7,10 +7,6 @@ __pycache__/
 env/
 venv/
 ENV/
-docs/
-!docs/diary.md
-!docs/mock-data.json
-!docs/internal_functions.md
 build/
 develop-eggs/
 dist/
