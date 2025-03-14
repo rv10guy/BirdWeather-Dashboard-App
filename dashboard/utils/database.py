@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from dashboard.models import db
 from dashboard.models.bird import Bird
 from dashboard.models.metadata import Metadata
-from dashboard.utils.birdweather_api import get_bird_detections, get_bird_species_info, get_species_detection_stats
+from dashboard.utils.birdweather_api import get_bird_detections, get_bird_species_info, get_species_detection_stats, get_station_info
 
 def initialize_database(config):
     """
@@ -52,6 +52,25 @@ def initialize_database(config):
         with current_app.app_context():
             Metadata.set_last_detection_date(last_date_str)
         logging.info(f"Set initial last detection date to {last_date_str}")
+        
+        # Fetch station information to get coordinates
+        try:
+            station_info = get_station_info(config)
+            if station_info and 'coords' in station_info:
+                lat = station_info['coords'].get('lat')
+                lon = station_info['coords'].get('lon')
+                
+                if lat is not None and lon is not None:
+                    with current_app.app_context():
+                        Metadata.set_station_coordinates(lat, lon)
+                    logging.info(f"Set station coordinates to lat: {lat}, lon: {lon}")
+                else:
+                    logging.warning("Station coordinates not available in API response")
+            else:
+                logging.warning("Failed to retrieve station information from API")
+        except Exception as e:
+            logging.error(f"Error fetching station information: {e}")
+            # Continue with database initialization even if we can't get coordinates
         
         return True
     except SQLAlchemyError as e:
@@ -245,3 +264,43 @@ def update_database(config):
     except Exception as e:
         logging.error(f"Database update failed: {e}")
         return stats 
+
+def update_station_coordinates(config):
+    """
+    Update the station coordinates in the database if they don't exist.
+    
+    Args:
+        config: Application configuration dictionary
+        
+    Returns:
+        dict: Dictionary containing 'lat' and 'lon' or None if failed
+    """
+    try:
+        # Check if coordinates already exist
+        with current_app.app_context():
+            existing_coords = Metadata.get_station_coordinates()
+            
+        if existing_coords:
+            logging.info(f"Station coordinates already exist: lat: {existing_coords['lat']}, lon: {existing_coords['lon']}")
+            return existing_coords
+            
+        # Fetch station information to get coordinates
+        station_info = get_station_info(config)
+        if station_info and 'coords' in station_info:
+            lat = station_info['coords'].get('lat')
+            lon = station_info['coords'].get('lon')
+            
+            if lat is not None and lon is not None:
+                with current_app.app_context():
+                    result = Metadata.set_station_coordinates(lat, lon)
+                logging.info(f"Updated station coordinates to lat: {lat}, lon: {lon}")
+                return result
+            else:
+                logging.warning("Station coordinates not available in API response")
+                return None
+        else:
+            logging.warning("Failed to retrieve station information from API")
+            return None
+    except Exception as e:
+        logging.error(f"Error updating station coordinates: {e}")
+        return None 

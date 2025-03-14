@@ -46,3 +46,55 @@ class Metadata(db.Model):
         
         db.session.commit()
         return record 
+    
+    @classmethod
+    def get_station_coordinates(cls):
+        """
+        Get the station coordinates (latitude and longitude).
+        
+        Returns:
+            dict: Dictionary containing 'lat' and 'lon' or None if not found
+        """
+        lat_record = db.session.get(cls, 'station_latitude')
+        lon_record = db.session.get(cls, 'station_longitude')
+        
+        if lat_record and lon_record:
+            try:
+                return {
+                    'lat': float(lat_record.value),
+                    'lon': float(lon_record.value)
+                }
+            except (ValueError, TypeError):
+                return None
+        return None
+    
+    @classmethod
+    def set_station_coordinates(cls, lat, lon):
+        """
+        Set the station coordinates (latitude and longitude).
+        
+        Args:
+            lat: Latitude as float
+            lon: Longitude as float
+            
+        Returns:
+            dict: Dictionary containing the updated coordinates
+        """
+        # Update or create latitude record
+        lat_record = db.session.get(cls, 'station_latitude')
+        if lat_record:
+            lat_record.value = str(lat)
+        else:
+            lat_record = cls(key='station_latitude', value=str(lat))
+            db.session.add(lat_record)
+        
+        # Update or create longitude record
+        lon_record = db.session.get(cls, 'station_longitude')
+        if lon_record:
+            lon_record.value = str(lon)
+        else:
+            lon_record = cls(key='station_longitude', value=str(lon))
+            db.session.add(lon_record)
+        
+        db.session.commit()
+        return {'lat': lat, 'lon': lon} 

@@ -559,4 +559,54 @@ The station information API function is fully implemented and documented. It suc
 - Create a dedicated weather and station status panel
 - Implement periodic auto-refresh of station data
 - Add visual indicators for system health metrics
-- Create alerts for critical values (low battery, high temperature, etc.) 
+- Create alerts for critical values (low battery, high temperature, etc.)
+
+## [2025-03-23] Database Enhancement: Added Station Coordinates
+
+### Summary
+Enhanced the database to store station coordinates (latitude and longitude) retrieved from the BirdWeather API. This information is now automatically fetched and stored during database initialization, allowing for future geolocation features such as maps and regional bird data analysis. Also added functionality to update coordinates for existing databases.
+
+### Key Features Implemented
+- **Station Coordinates Storage**:
+  - Added latitude and longitude fields to database via Metadata model
+  - Implemented automatic retrieval of coordinates during database initialization
+  - Added support for updating coordinates in existing databases
+  - Created helper methods for easy access to coordinate data
+
+- **API Integration**:
+  - Utilized the existing `get_station_info` function to fetch station data
+  - Added error handling for potential API failures
+  - Implemented graceful fallbacks if coordinates cannot be retrieved
+  - Ensured coordinate retrieval doesn't block database initialization
+
+- **Data Access Methods**:
+  - Added `get_station_coordinates` method to retrieve formatted coordinate data
+  - Created `set_station_coordinates` method for updating coordinate values
+  - Implemented type conversion and validation for coordinate data
+  - Added comprehensive error handling for data access
+
+### Technical Implementation
+- **Metadata Model**:
+  - Extended the key-value storage system to handle station coordinates
+  - Maintained backward compatibility with existing code
+  - Added type conversion for stored string values to proper numeric format
+  - Implemented validation to ensure coordinates are valid
+
+- **Database Initialization**:
+  - Updated initialization code to fetch and store coordinates
+  - Added error handling to continue initialization even if API calls fail
+  - Implemented logging for coordinate retrieval success/failure
+  - Created a separate function for updating coordinates in existing databases
+
+### Files with Significant Changes
+- `dashboard/models/metadata.py` - Added methods for coordinate storage and retrieval
+- `dashboard/utils/database.py` - Updated initialization and added coordinate update function
+
+### Current Status
+The station coordinates are now successfully stored in the database during initialization. The implementation is robust, with proper error handling and fallback mechanisms. Existing databases can be updated with coordinates using the new `update_station_coordinates` function.
+
+### Next Steps
+- Implement a map view using the stored coordinates
+- Add regional bird statistics based on location
+- Create a user-friendly display of station location in the dashboard
+- Consider adding reverse geocoding to show city/region names 
