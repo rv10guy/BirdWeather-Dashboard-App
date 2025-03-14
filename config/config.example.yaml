@@ -25,3 +25,10 @@ logging:
 auth:
   secret_key: "your-secret-key"
   token_expire_minutes: 60 
+
+# BirdWeather API configuration
+api:
+  birdweather:
+    url: "https://app.birdweather.com/graphql"
+    key: "your-api-key-here"  # Replace with your actual API key
+    station_id: "your-station-id-here"  # Replace with your actual station ID 
