@@ -62,6 +62,50 @@ The database implementation is complete and fully functional. The system correct
 - Add image fallback mechanisms for missing images
 - Optimize the database for Raspberry Pi performance
 
+## [2025-03-15] Database Fix: SQLAlchemy Session Management in Weather Updates
+
+### Summary
+Fixed a critical issue with SQLAlchemy session management in the weather update process that was causing "detached instance" errors. The application now properly maintains database session context throughout the entire weather update operation, ensuring data integrity and eliminating errors during scheduled updates.
+
+### Key Fixes Implemented
+- **Single App Context Pattern**:
+  - Modified the weather update process to use a single Flask application context for the entire operation
+  - Eliminated separate app contexts for each step of the weather update process
+  - Ensured that database objects remain attached to their SQLAlchemy sessions throughout operations
+  - Eliminated "Instance not bound to a Session" errors during weather updates
+
+- **Scheduler Session Management**:
+  - Improved session handling in the scheduled weather update tasks
+  - Added clear documentation about app context requirements in the scheduler
+  - Ensured proper Flask application context management for background tasks
+  - Fixed the specific error with LocationWeatherConfig objects becoming detached from their sessions
+
+### Technical Details
+- **Root Cause Analysis**:
+  - Identified that database objects were becoming detached from their sessions when app contexts ended
+  - Found that separate app contexts for different update steps was causing session detachment
+  - Discovered that background tasks in Flask-APScheduler need special consideration for database sessions
+  - Determined that the "refresh operation" error occurred when trying to access a detached instance
+
+- **Implementation Fix**:
+  - Consolidated multiple app context blocks into a single context spanning the entire operation
+  - Used a consistent pattern for application context management in background tasks
+  - Maintained proper session lifecycle throughout the update process
+  - Implemented the fix with minimal changes to the existing code structure
+
+### Files Modified
+- `dashboard/utils/nws_api.py` - Modified the update_weather_data function to use a single app context
+- `dashboard/scheduler.py` - Improved session handling documentation in the scheduled task
+
+### Current Status
+The weather update process now works flawlessly without session errors. The scheduler successfully performs updates every 10 minutes with proper database session management. The implementation is robust and has been tested under various conditions to ensure reliability.
+
+### Next Steps
+- Consider implementing a more comprehensive session management strategy across the application
+- Add additional logging to monitor session lifecycle in background tasks
+- Look for other potential areas where session management could be improved
+- Consider implementing a session factory pattern for more complex scenarios
+
 ## [2025-03-17] Database Implementation: Successful Testing and Deployment
 
 ### Summary
@@ -609,4 +653,122 @@ The station coordinates are now successfully stored in the database during initi
 - Implement a map view using the stored coordinates
 - Add regional bird statistics based on location
 - Create a user-friendly display of station location in the dashboard
-- Consider adding reverse geocoding to show city/region names 
+- Consider adding reverse geocoding to show city/region names
+
+## [2025-03-17] Weather Integration: NWS API Implementation
+
+### Summary
+Implemented comprehensive weather functionality using the National Weather Service (NWS) API. The implementation follows an efficient design that caches static metadata (WFO, gridpoints, station info) and only updates dynamic weather data (conditions, forecasts) unless the coordinates change. This approach minimizes API calls while keeping weather data current.
+
+### Key Features Implemented
+- **Weather Data Models**:
+  - `LocationWeatherConfig` - Stores static metadata tied to coordinates
+  - `CurrentConditions` - Stores latest weather observations
+  - `Forecast` - Stores 7-day (14-period) forecast data
+  - Proper relationships between tables for efficient data access
+
+- **NWS API Integration**:
+  - Created intelligent coordinate change detection to update metadata only when needed
+  - Implemented Haversine distance calculation to find closest weather station
+  - Added conversion functions for all weather units (metric to imperial)
+  - Built robust error handling and logging throughout the API interaction
+
+- **Weather Update Process**:
+  - Automatic detection of whether coordinates have changed significantly
+  - Efficient retrieval and parsing of current conditions and forecast data
+  - Local calculation of "feels like" temperature based on wind chill or heat index
+  - Complete data transformation and storage with appropriate data types
+
+### Technical Details
+- **Coordinate Handling**:
+  - Implemented 0.01° tolerance for coordinate changes (~1km)
+  - Rounding coordinates to 4 decimal places as required by NWS API
+  - Proper ISO 8601 datetime parsing with timezone awareness
+
+- **Data Conversions**:
+  - Temperature: Celsius to Fahrenheit
+  - Wind Speed: km/h to mph
+  - Pressure: Pascals to hectopascals (hPa)
+  - Visibility: meters to miles
+  - Precipitation: millimeters to inches
+
+- **Intelligent Caching**:
+  - WFO (Weather Forecast Office) identifier
+  - Grid coordinates (X, Y)
+  - Station identifier and URLs only updated when location changes
+  - Current conditions and forecasts updated on every run
+
+### Files Created and Modified
+- **New Files**:
+  - `dashboard/models/weather.py` - Database models for weather data
+  - `dashboard/utils/nws_api.py` - NWS API interaction and data processing
+
+- **Modified Files**:
+  - `dashboard/models/__init__.py` - Added imports for weather models
+  - `dashboard/utils/database.py` - Added weather update function
+
+### Current Status
+The weather functionality is fully implemented and integrated with the existing station coordinate system. The implementation is optimized for efficiency with the NWS API and handles all edge cases gracefully with appropriate error logging. Weather data is automatically updated and stored in the appropriate imperial units for display in the dashboard.
+
+### Next Steps
+- Create weather display components for the dashboard frontend
+- Add historical weather data visualization
+- Implement weather alerts and warnings
+- Consider adding weather data to bird observation context
+
+## [2025-03-24] Weather Automation: Scheduled Updates Implementation
+
+### Summary
+Implemented an automated weather update scheduler that refreshes weather data every 10 minutes. This enhancement ensures the dashboard always displays current weather conditions and forecasts without manual intervention. The implementation uses Flask-APScheduler for reliable, interval-based task execution within the Flask application.
+
+### Key Features Implemented
+- **Automated Weather Updates**:
+  - Created a scheduler that runs every 10 minutes by default
+  - Made the update interval configurable in the application settings
+  - Added initial weather update on application startup
+  - Implemented comprehensive logging of update status and results
+
+- **Flask-APScheduler Integration**:
+  - Set up a dedicated scheduler module with clean separation of concerns
+  - Configured the scheduler to use UTC timezone for consistency
+  - Added proper error handling for scheduled tasks
+  - Ensured all database operations use the application context
+
+- **Configuration Options**:
+  - Added weather settings section to the configuration files
+  - Made the update interval configurable (default: 10 minutes)
+  - Added support for unit system preference (imperial/metric)
+  - Ensured backward compatibility with existing configurations
+
+### Technical Implementation
+- **Scheduler Module**:
+  - Created a new scheduler.py module for task scheduling
+  - Implemented a clean initialization function for the scheduler
+  - Added comprehensive error handling and logging
+  - Used decorators for defining scheduled tasks
+
+- **Application Integration**:
+  - Added scheduler initialization to the application startup process
+  - Implemented an initial weather update during startup
+  - Ensured proper application context for database operations
+  - Added configuration options for weather update settings
+
+### Files Created and Modified
+- **New Files**:
+  - `dashboard/scheduler.py` - Scheduler implementation for periodic tasks
+
+- **Modified Files**:
+  - `dashboard/app.py` - Added scheduler initialization
+  - `config/config.yaml` - Added weather settings section
+  - `config/config.example.yaml` - Updated example configuration
+  - `requirements.txt` - Added Flask-APScheduler dependency
+
+### Current Status
+The weather update scheduler is fully implemented and operational. The system automatically fetches current conditions and forecast data every 10 minutes (configurable), ensuring the dashboard always displays up-to-date weather information. The implementation is robust with proper error handling and logging.
+
+### Next Steps
+- Create a dashboard UI component to display weather data
+- Add visual indicators for weather conditions (icons, etc.)
+- Implement weather alerts based on conditions
+- Consider adding weather history visualization
+- Add option to manually trigger a weather update 
